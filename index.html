@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kokoro TTS Playground</title>
+    <style>
+        :root {
+            --primary: #FF5A00;
+            --primary-hover: #E04D00;
+            --bg-color: #0f0f11;
+            --card-bg: #1a1a1c;
+            --text-color: #e5e5e5;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #aaa;
+        }
+
+        textarea, select {
+            width: 100%;
+            padding: 12px;
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #result {
+            margin-top: 24px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        audio {
+            width: 100%;
+        }
+
+        .download-btn {
+            background-color: #333;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .download-btn:hover {
+            background-color: #444;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎙️ Kokoro TTS Playground</h1>
+        
+        <label for="voice">Voice Model</label>
+        <select id="voice">
+            <option value="af_sarah">Sarah (American Female)</option>
+            <option value="af_nicole">Nicole (American Female)</option>
+            <option value="am_adam">Adam (American Male)</option>
+            <option value="am_michael">Michael (American Male)</option>
+            <option value="bf_emma">Emma (British Female)</option>
+            <option value="bm_george">George (British Male)</option>
+        </select>
+
+        <label for="text">Text to Speak</label>
+        <textarea id="text" placeholder="Type something here to convert to speech..."></textarea>
+
+        <button id="generateBtn" onclick="generateSpeech()">Generate Audio</button>
+        <div id="loading" class="loader">Generating audio... this might take a few seconds...</div>
+
+        <div id="result">
+            <audio id="audioPlayer" controls></audio>
+            <a id="downloadLink" class="download-btn" style="width: 100%; padding: 14px; border-radius: 8px; color: white; box-sizing: border-box; font-weight: 600;">Download Audio</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://kokoro-deployed-tts-production.up.railway.app/v1/audio/speech";
+
+        async function generateSpeech() {
+            const text = document.getElementById("text").value.trim();
+            const voice = document.getElementById("voice").value;
+            const btn = document.getElementById("generateBtn");
+            const loading = document.getElementById("loading");
+            const result = document.getElementById("result");
+            const audioPlayer = document.getElementById("audioPlayer");
+            const downloadLink = document.getElementById("downloadLink");
+
+            if (!text) {
+                alert("Please enter some text!");
+                return;
+            }
+
+            // UI State: Loading
+            btn.disabled = true;
+            loading.style.display = "block";
+            result.style.display = "none";
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "kokoro",
+                        input: text,
+                        voice: voice,
+                        response_format: "wav"
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                // Get audio blob
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Set up player and download
+                audioPlayer.src = url;
+                downloadLink.href = url;
+                downloadLink.download = `kokoro-speech-${new Date().getTime()}.wav`;
+
+                // UI State: Done
+                result.style.display = "flex";
+                audioPlayer.play();
+                
+            } catch (error) {
+                alert("Failed to generate speech: " + error.message);
+                console.error(error);
+            } finally {
+                // UI State: Reset
+                btn.disabled = false;
+                loading.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
