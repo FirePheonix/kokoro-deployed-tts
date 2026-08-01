@@ -531,10 +531,9 @@ impl IntoResponse for SpeechError {
     }
 }
 
-/// Returns a 200 OK response to make it easier to check if the server is
-/// running.
-async fn handle_home() -> &'static str {
-    "OK"
+/// Returns the HTML frontend UI instead of just "OK"
+async fn handle_home() -> axum::response::Html<&'static str> {
+    axum::response::Html(include_str!("../../index.html"))
 }
 
 async fn handle_tts(
