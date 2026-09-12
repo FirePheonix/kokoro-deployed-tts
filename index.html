@@ -168,7 +168,7 @@
     </div>
 
     <script>
-        const API_URL = "https://kokoro-deployed-tts-production.up.railway.app/v1/audio/speech";
+        const API_URL = `${window.location.origin}/v1/audio/speech`;
 
         async function generateSpeech() {
             const text = document.getElementById("text").value.trim();
