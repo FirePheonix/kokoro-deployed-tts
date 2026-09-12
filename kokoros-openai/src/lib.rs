@@ -480,6 +480,7 @@ pub async fn create_server(tts_instances: Vec<TTSKoko>) -> Router {
         .expect("At least one TTS instance required");
 
     Router::new()
+        .route("/health", get(|| async { r#"{"status":"healthy","service":"kokoro-tts"}"# }))
         .route("/", get(handle_home))
         .route("/v1/audio/speech", post(handle_tts))
         .route("/v1/audio/voices", get(handle_voices))
